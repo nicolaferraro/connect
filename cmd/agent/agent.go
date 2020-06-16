@@ -55,7 +55,7 @@ func main() {
 					fmt.Printf("ERROR: cannot save the new credentials for token %q: %v\n", tkName, err)
 					continue
 				}
-				fmt.Printf("Token %q has been refreshed. New expiry date is %v", tkName, newToken.GetExpiry())
+				fmt.Printf("Token %q has been refreshed. New expiry date is %v\n", tkName, newToken.GetExpiry())
 			} else {
 				fmt.Printf("No need to refresh token %q (expires on %v)\n", tkName, newToken.GetExpiry())
 			}

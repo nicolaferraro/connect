@@ -1,16 +1,12 @@
 package commands
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/nicolaferraro/connect/pkg/authorization"
-	"github.com/nicolaferraro/connect/pkg/provider"
 	"github.com/nicolaferraro/connect/pkg/storage/kubernetes"
 	kubernetesutils "github.com/nicolaferraro/connect/pkg/util/kubernetes"
 	"github.com/spf13/cobra"
-	"strings"
-	"text/template"
 )
 
 type loginOptions struct {
@@ -40,43 +36,10 @@ func (o *loginOptions) login(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("wrong syntax. Expected: %s %s <provider>", cmd.Parent().Name(), cmd.Name())
 	}
 	providerName := args[0]
-	provider := provider.Get(providerName)
-	if provider == nil {
-		return fmt.Errorf("Provider %q not found", providerName)
-	}
 
-	for _, opt := range o.Options {
-		if !strings.Contains(opt, "=") {
-			return fmt.Errorf("wrong format for option %q: expected <key>=<val>", opt)
-		}
-		kvs := strings.SplitN(opt, "=", 2)
-		if err := provider.SetField(kvs[0], kvs[1]); err != nil {
-			return err
-		}
-	}
-
-	for _, o := range provider.Fields {
-		if o.Required && o.Value == "" {
-			return fmt.Errorf("required field %q is missing", o.ID)
-		}
-	}
-
-	params := make(map[string]string)
-	for _, o := range provider.Fields {
-		params[o.ID] = o.Value
-	}
-
-	for idx, o := range provider.Fields {
-		t, err := template.New(o.ID).Parse(o.Value)
-		if err != nil {
-			return err
-		}
-		res := bytes.NewBuffer(nil)
-		err = t.Execute(res, params)
-		if err != nil {
-			return err
-		}
-		provider.Fields[idx].Value = res.String()
+	provider, err := loadProvider(providerName, o.Options)
+	if err != nil {
+		return err
 	}
 
 	flow := authorization.NewFlow(*provider)
