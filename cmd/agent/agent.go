@@ -57,7 +57,7 @@ func main() {
 				}
 				fmt.Printf("Token %q has been refreshed. New expiry date is %v", tkName, newToken.GetExpiry())
 			} else {
-				fmt.Printf("No need to refresh token %q until %v\n", tkName, newToken.GetExpiry())
+				fmt.Printf("No need to refresh token %q (expires on %v)\n", tkName, newToken.GetExpiry())
 			}
 		}
 	}

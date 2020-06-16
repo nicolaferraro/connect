@@ -7,14 +7,16 @@ import (
 	"github.com/nicolaferraro/connect/pkg/authorization"
 	"github.com/nicolaferraro/connect/pkg/provider"
 	"github.com/nicolaferraro/connect/pkg/storage/kubernetes"
+	kubernetesutils "github.com/nicolaferraro/connect/pkg/util/kubernetes"
 	"github.com/spf13/cobra"
 	"strings"
 	"text/template"
 )
 
 type loginOptions struct {
-	Name    string
-	Options []string
+	Name      string
+	Options   []string
+	Namespace string
 }
 
 func NewCmdRegister() *cobra.Command {
@@ -27,6 +29,7 @@ func NewCmdRegister() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&options.Name, "name", "", `The name to use for the token`)
+	cmd.Flags().StringVar(&options.Namespace, "namespace", "", `The namespace to use for storing the token`)
 	cmd.Flags().StringArrayVarP(&options.Options, "option", "o", nil, `A list of options to pass`)
 
 	return &cmd
@@ -79,7 +82,15 @@ func (o *loginOptions) login(cmd *cobra.Command, args []string) error {
 	flow := authorization.NewFlow(*provider)
 	tk, err := flow.RequestToken(context.Background())
 
-	store, err := kubernetes.NewKubernetesTokenStorage("nicola-webhooks")
+	namespace := o.Namespace
+	if namespace == "" {
+		namespace, err = kubernetesutils.GetCurrentNamespace()
+		if err != nil {
+			return err
+		}
+	}
+
+	store, err := kubernetes.NewKubernetesTokenStorage(namespace)
 	if err != nil {
 		return err
 	}

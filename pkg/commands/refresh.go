@@ -3,10 +3,12 @@ package commands
 import (
 	"fmt"
 	"github.com/nicolaferraro/connect/pkg/storage/kubernetes"
+	kubernetesutils "github.com/nicolaferraro/connect/pkg/util/kubernetes"
 	"github.com/spf13/cobra"
 )
 
 type refreshOptions struct {
+	Namespace string
 }
 
 func NewCmdRefresh() *cobra.Command {
@@ -18,6 +20,8 @@ func NewCmdRefresh() *cobra.Command {
 		RunE:  options.refresh,
 	}
 
+	cmd.Flags().StringVar(&options.Namespace, "namespace", "", `The namespace to use when looking for the token`)
+
 	return &cmd
 }
 
@@ -27,7 +31,16 @@ func (o *refreshOptions) refresh(cmd *cobra.Command, args []string) error {
 	}
 	name := args[0]
 
-	store, err := kubernetes.NewKubernetesTokenStorage("nicola-webhooks")
+	namespace := o.Namespace
+	if namespace == "" {
+		ns, err := kubernetesutils.GetCurrentNamespace()
+		if err != nil {
+			return err
+		}
+		namespace = ns
+	}
+
+	store, err := kubernetes.NewKubernetesTokenStorage(namespace)
 	if err != nil {
 		return err
 	}

@@ -1,12 +1,20 @@
 package kubernetes
 
 import (
+	"errors"
+	"fmt"
 	"github.com/mitchellh/go-homedir"
+	"io/ioutil"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"log"
 	"os"
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 )
 
 const inContainerNamespaceFile = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
@@ -19,6 +27,50 @@ func GetKubernetesConfigOrDie() *rest.Config {
 func GetKubernetesConfig() (*rest.Config, error) {
 	initialize(os.Getenv("KUBECONFIG"))
 	return config.GetConfig()
+}
+
+// GetCurrentNamespace --
+func GetCurrentNamespace() (string, error) {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		kubeContainer, err := shouldUseContainerMode()
+		if err != nil {
+			return "", err
+		}
+		if kubeContainer {
+			return getNamespaceFromKubernetesContainer()
+		}
+	}
+	if kubeconfig == "" {
+		var err error
+		kubeconfig, err = getDefaultKubeConfigFile()
+		if err != nil {
+			fmt.Printf("ERROR: cannot get information about current user: %v", err)
+		}
+	}
+	if kubeconfig == "" {
+		return "default", nil
+	}
+
+	data, err := ioutil.ReadFile(kubeconfig)
+	if err != nil {
+		return "", err
+	}
+	conf := clientcmdapi.NewConfig()
+	if len(data) == 0 {
+		return "", errors.New("kubernetes config file is empty")
+	}
+
+	decoded, _, err := clientcmdlatest.Codec.Decode(data, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Kind: "Config"}, conf)
+	if err != nil {
+		return "", err
+	}
+
+	clientcmdconfig := decoded.(*clientcmdapi.Config)
+
+	cc := clientcmd.NewDefaultClientConfig(*clientcmdconfig, &clientcmd.ConfigOverrides{})
+	ns, _, err := cc.Namespace()
+	return ns, err
 }
 
 // init initialize the k8s client for usage outside the cluster
@@ -72,4 +124,13 @@ func shouldUseContainerMode() (bool, error) {
 		return true, err
 	}
 	return false, nil
+}
+
+func getNamespaceFromKubernetesContainer() (string, error) {
+	var nsba []byte
+	var err error
+	if nsba, err = ioutil.ReadFile(inContainerNamespaceFile); err != nil {
+		return "", err
+	}
+	return string(nsba), nil
 }

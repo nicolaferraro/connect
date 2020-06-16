@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/nicolaferraro/connect/pkg/provider"
 	"github.com/nicolaferraro/connect/pkg/token"
+	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 )
 
@@ -26,7 +27,11 @@ func (f *Flow) RequestToken(ctx context.Context) (*token.Token, error) {
 	oauth2Config := f.GetOauth2Configuration()
 
 	url := oauth2Config.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	fmt.Printf("Visit the URL for the auth dialog: %v\n", url)
+	fmt.Printf("A browser window is being opened on the following URL to proceed with authorization: %v\n", url)
+
+	if err := browser.OpenURL(url); err != nil {
+		fmt.Printf("ERROR: cannot open URL in browser: %v\n", err)
+	}
 
 	var code string
 	select {
