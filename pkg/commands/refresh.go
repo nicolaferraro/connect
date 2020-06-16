@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"github.com/nicolaferraro/connect/pkg/storage/kubernetes"
 	"github.com/spf13/cobra"
@@ -38,13 +37,12 @@ func (o *refreshOptions) refresh(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	source := tk.Provider.GetOauth2Configuration().TokenSource(context.Background(), tk.Oauth2)
-	newToken, err := source.Token()
+	newToken, err := tk.Refresh()
 	if err != nil {
 		return err
 	}
-	if newToken.AccessToken == tk.GetAccessToken() {
-		fmt.Printf("Token %q has not been refreshed. Refresh deadline is %v\n", name, newToken.Expiry)
+	if newToken.GetAccessToken() == tk.GetAccessToken() {
+		fmt.Printf("Token %q has not been refreshed. Refresh deadline is %v\n", name, newToken.GetExpiry())
 		return nil
 	} else {
 		fmt.Printf("Token %q successfully refreshed\n", name)

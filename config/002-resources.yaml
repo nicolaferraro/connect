@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connect-agent
+  labels:
+    app: connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: connect-agent
+  template:
+    metadata:
+      labels:
+        name: connect-agent
+        app: connect
+    spec:
+      serviceAccountName: connect-agent
+      containers:
+      - name: connect-agent
+        image: ko://github.com/nicolaferraro/connect/cmd/agent/
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace

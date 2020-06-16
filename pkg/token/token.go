@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/nicolaferraro/connect/pkg/provider"
 	"golang.org/x/oauth2"
+	"time"
 )
 
 type Token struct {
@@ -21,6 +22,25 @@ func (t *Token) GetAccessToken() string {
 		return t.Oauth2.AccessToken
 	}
 	return ""
+}
+
+func (t *Token) GetExpiry() time.Time {
+	if t.Oauth2 != nil {
+		return t.Oauth2.Expiry
+	}
+	return time.Unix(1<<63-62135596801, 999999999)
+}
+
+func (t *Token) Refresh() (*Token, error) {
+	source := t.Provider.GetOauth2Configuration().TokenSource(context.Background(), t.Oauth2)
+	otk, err := source.Token()
+	if err != nil {
+		return nil, err
+	}
+	return &Token{
+		Provider: t.Provider,
+		Oauth2:   otk,
+	}, nil
 }
 
 type TokenSource struct {
