@@ -23,7 +23,7 @@ func (s *Server) Start() {
 	http.HandleFunc("/callback", s.callback)
 
 	println("Server listening on port 3000...")
-	println("Callback URL: http://localhost:3000/callback")
+	println("Using callback URL: http://localhost:3000/callback")
 	go func() {
 		if err := http.ListenAndServe("localhost:3000", nil); err != nil {
 			fmt.Sprintf("Error while starting server: %v", err)

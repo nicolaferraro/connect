@@ -1,0 +1,13 @@
+id: azure
+group: azure
+description: Azure AD Oauth
+fields:
+  - id: auth-url
+    description: Oauth2 auth URL
+    value: "https://login.microsoftonline.com/{{ .tenant }}/oauth2/v2.0/authorize"
+  - id: token-url
+    description: Oauth2 token URL
+    value: "https://login.microsoftonline.com/{{ .tenant }}/oauth2/v2.0/token"
+  - id: tenant
+    description: Azure tenant to use
+    value: consumers
